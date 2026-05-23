@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VIATRUCK CENTER</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --orange:     #EA580C;
+      --orange-l:   #F97316;
+      --green:      #059669;
+      --red:        #DC2626;
+      --cyan:       #0891B2;
+      --yellow:     #F59E0B;
+      --bg0:        #080810;
+      --bg1:        #111118;
+      --bg2:        #16161f;
+      --bg3:        #1c1c28;
+      --border:     #2a2a3a;
+      --text:       #f0f0f5;
+      --text-dim:   #8888a0;
+      --text-faint: #55556a;
+      --mono:       'DM Mono', monospace;
+      --sans:       'DM Sans', sans-serif;
+    }
+
+    body {
+      background: radial-gradient(ellipse at 30% 20%, #1a0f08 0%, #080810 60%);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Phone Shell ── */
+    .phone {
+      width: 375px;
+      height: 780px;
+      background: var(--bg1);
+      border-radius: 48px;
+      overflow: hidden;
+      position: relative;
+      box-shadow:
+        0 0 0 1px #0a0a14,
+        0 0 0 12px #13131e,
+        0 0 0 14px #1e1e2c,
+        0 40px 120px rgba(0,0,0,0.85),
+        inset 0 0 0 1px rgba(255,255,255,0.04);
+    }
+
+    .screen {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: none;
+    }
+    .scroll::-webkit-scrollbar { display: none; }
+
+    /* ── Keyframes ── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes popIn {
+      0%  { transform: scale(0.4); opacity: 0; }
+      70% { transform: scale(1.12); opacity: 1; }
+      100%{ transform: scale(1); }
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.4; transform: scale(0.75); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateX(-14px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes burst {
+      0%   { transform: translate(var(--tx),var(--ty)) scale(1); opacity: 1; }
+      100% { transform: translate(calc(var(--tx)*3),calc(var(--ty)*3)) scale(0); opacity: 0; }
+    }
+    @keyframes checkPop {
+      0%  { transform: scale(0) rotate(-30deg); opacity: 0; }
+      60% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+      100%{ transform: scale(1) rotate(0deg); }
+    }
+    @keyframes shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    @keyframes progressGlow {
+      0%,100% { box-shadow: 0 0 6px rgba(234,88,12,0.5); }
+      50%      { box-shadow: 0 0 14px rgba(234,88,12,0.9); }
+    }
+
+    .anim-fade  { animation: fadeInUp 0.35s cubic-bezier(.22,.68,0,1.2) both; }
+    .anim-slide { animation: slideDown 0.3s ease both; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ════════════════════════════════════════════════════════
+   DEMO DATA
+════════════════════════════════════════════════════════ */
+const DATA = {
+  clientes: [
+    {
+      id: 1,
+      empresa: "Transportes Carrión SpA",
+      rut: "76.123.456-7",
+      camiones: [
+        { ppu:"PPU-3341", modelo:"Mercedes Actros 2546", year:2019, estado:"operativo", km:245300 },
+        { ppu:"BKF-1104", modelo:"Volvo FH 500",          year:2020, estado:"en_taller", km:312450, ot:"OT-2025-089" },
+        { ppu:"KTJ-881",  modelo:"Scania R450",            year:2018, estado:"listo",     km:198750 },
+      ]
+    },
+    {
+      id: 2,
+      empresa: "Minera Atacama",
+      rut: "76.987.654-3",
+      camiones: [
+        { ppu:"GHJ-445", modelo:"Kenworth T800",          year:2017, estado:"espera",    km:425600 },
+        { ppu:"KTJ-220", modelo:"Freightliner Cascadia",  year:2021, estado:"operativo", km:87300  },
+      ]
+    }
+  ],
+  mecanico: { nombre:"Rodrigo Tapia", esp:"Especialista Motor", rating:4.9, av:"RT" },
+  ot: {
+    numero: "OT-2025-089",
+    fecha:  "23 Mayo 2025",
+    eta:    "17:30 hrs",
+    tareas: [
+      { id:1, txt:"Recepción y diagnóstico inicial",     estado:"done",     hora:"08:10" },
+      { id:2, txt:"Desmontaje motor",                    estado:"done",     hora:"08:45" },
+      { id:3, txt:"Reemplazo junta culata",              estado:"progress", hora:null    },
+      { id:4, txt:"Ajuste y sangrado sistema frenos",    estado:"pending",  hora:null    },
+      { id:5, txt:"Cambio filtro aceite y aire",         estado:"pending",  hora:null    },
+      { id:6, txt:"Revisión sistema eléctrico",          estado:"pending",  hora:null    },
+      { id:7, txt:"Prueba de ruta (10 km)",              estado:"pending",  hora:null    },
+      { id:8, txt:"Lavado y entrega",                    estado:"pending",  hora:null    },
+    ]
+  },
+  fallas: [
+    { urg:"critico", desc:"Junta de culata deteriorada",     obs:"Filtración aceite/refrigerante confirmada. Requiere reemplazo inmediato." },
+    { urg:"media",   desc:"Frenos delanteros desgastados",   obs:"Pastillas al 15%. Riesgo de falla dentro de 5.000 km."                  },
+    { urg:"menor",   desc:"Filtro aceite vencido",           obs:"Último cambio hace 18.000 km. Recomendable reemplazar."                   },
+  ],
+  obsGenerales: "Camión ingresó por falla de potencia y humo azul. Se detectó fuga en culata como causa principal. Motor en buen estado general.",
+  items: [
+    { id:1, nombre:"Junta culata Volvo FH",        marca:"ELRING", qty:1, precio:185000, mo:95000 },
+    { id:2, nombre:"Kit frenos delanteros",         marca:"BOSCH",  qty:2, precio:68000,  mo:35000 },
+    { id:3, nombre:"Filtro aceite + mano de obra",  marca:"MANN",   qty:1, precio:28000,  mo:0     },
+  ],
+  notifs: [
+    { id:1, txt:"Diagnóstico listo — requiere aprobación",  tipo:"alerta", t:"hace 2h",  nueva:true  },
+    { id:2, txt:"Tarea completada: Desmontaje motor",        tipo:"ok",     t:"hace 1h",  nueva:true  },
+    { id:3, txt:"Tu camión BKF-1104 está en progreso",       tipo:"info",   t:"hace 30m", nueva:false },
+    { id:4, txt:"Próximo servicio PPU-3341 en 500 km",       tipo:"prox",   t:"ayer",     nueva:false },
+  ],
+  historial: [
+    {
+      fecha:"15 Mar 2025", servicio:"Mantenimiento preventivo", mecanico:"Carlos Vega", costo:185000,
+      trabajos:["Cambio aceite motor","Revisión frenos","Ajuste correas"],
+      repuestos:["Aceite Shell Rimula 15W40 20L","Filtro aceite MANN","Correa alternador"],
+    },
+    {
+      fecha:"02 Ene 2025", servicio:"Reparación sistema eléctrico", mecanico:"Rodrigo Tapia", costo:320000,
+      trabajos:["Diagnóstico eléctrico","Reemplazo alternador","Revisión batería"],
+      repuestos:["Alternador Bosch 24V","Cables terminales"],
+    },
+    {
+      fecha:"10 Nov 2024", servicio:"Revisión técnica + mantención", mecanico:"Miguel Ríos", costo:890000,
+      trabajos:["Check-up general","Cambio filtros","Alineación y balanceo"],
+      repuestos:["Kit filtros (aceite, aire, combustible)","Neumáticos 295/80R22.5 x2"],
+    },
+  ],
+  msgs: [
+    { id:1, de:"mec", txt:"Hola! Ya revisamos el BKF-1104. Encontramos la junta culata en mal estado. Te envié el diagnóstico completo.", hora:"08:30" },
+    { id:2, de:"cli", txt:"Ok, visto. ¿Cuánto tiempo tomará la reparación?",                                                              hora:"09:15" },
+    { id:3, de:"mec", txt:"Estimamos tenerlo listo para las 17:30. Ya tenemos los repuestos en bodega. 👍",                               hora:"09:18" },
+    { id:4, de:"cli", txt:"Perfecto, aprobado. Gracias por la rapidez.",                                                                  hora:"09:20" },
+    { id:5, de:"mec", txt:"Vamos al trabajo! Te iré actualizando el avance. 🔧",                                                          hora:"09:22" },
+  ],
+};
+
+/* ════════════════════════════════════════════════════════
+   UTILS
+════════════════════════════════════════════════════════ */
+const clp = n => new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',minimumFractionDigits:0}).format(n);
+const now  = () => { const d=new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+
+const ESTADO = {
+  operativo: { lbl:"OPERATIVO",        col:"#059669", bg:"rgba(5,150,105,.14)",  dot:"#059669" },
+  en_taller: { lbl:"EN TALLER",        col:"#EA580C", bg:"rgba(234,88,12,.14)", dot:"#EA580C" },
+  listo:     { lbl:"LISTO P/ RETIRO",  col:"#0891B2", bg:"rgba(8,145,178,.14)", dot:"#0891B2" },
+  espera:    { lbl:"EN ESPERA",        col:"#8888a0", bg:"rgba(136,136,160,.14)",dot:"#8888a0" },
+};
+
+/* ── Tiny shared components ── */
+const Btn = ({children,onClick,variant='primary',style={},disabled=false}) => {
+  const [press,setPress] = useState(false);
+  const bases = {
+    primary: { background:'linear-gradient(135deg,#EA580C,#F97316)', color:'#fff', border:'none' },
+    green:   { background:'linear-gradient(135deg,#059669,#10B981)', color:'#fff', border:'none' },
+    ghost:   { background:'#1c1c28', color:'var(--text)', border:'1px solid var(--border)' },
+    danger:  { background:'transparent', color:'#DC2626', border:'1px solid rgba(220,38,38,.35)' },
+  };
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onPointerDown={()=>setPress(true)}
+      onPointerUp={()=>setPress(false)}
+      onPointerLeave={()=>setPress(false)}
+      style={{
+        width:'100%', padding:'15px', borderRadius:14,
+        fontSize:15, fontWeight:700, fontFamily:'var(--sans)',
+        cursor:disabled?'default':'pointer', letterSpacing:.3,
+        opacity:disabled?.5:1,
+        transform:press?'scale(0.96)':'scale(1)',
+        transition:'transform .15s, opacity .2s',
+        ...bases[variant], ...style,
+      }}
+    >{children}</button>
+  );
+};
+
+const BackBtn = ({onClick}) => (
+  <button onClick={onClick} style={{
+    background:'#1c1c28', border:'1px solid var(--border)', borderRadius:11,
+    padding:'9px 14px', color:'var(--text)', cursor:'pointer', fontSize:15,
+    flexShrink:0, transition:'transform .15s',
+  }}>‹</button>
+);
+
+const SectionLabel = ({children,style={}}) => (
+  <div style={{fontSize:10,color:'var(--text-dim)',fontWeight:700,letterSpacing:1.4,marginBottom:10,...style}}>
+    {children}
+  </div>
+);
+
+/* ── Particles ── */
+const Particles = ({active}) => {
+  if(!active) return null;
+  const P = Array.from({length:24},(_,i)=>({
+    id:i, angle:(i/24)*360,
+    dist: 50+Math.random()*70,
+    col: ['#EA580C','#F97316','#059669','#0891B2','#FCD34D','#fff'][i%6],
+    sz:  3+Math.random()*7,
+    del: Math.random()*.25,
+  }));
+  return (
+    <div style={{position:'absolute',top:'50%',left:'50%',pointerEvents:'none',zIndex:200}}>
+      {P.map(p=>{
+        const r=p.angle*Math.PI/180;
+        return <div key={p.id} style={{
+          position:'absolute', width:p.sz, height:p.sz, borderRadius:'50%',
+          background:p.col, transform:'translate(-50%,-50%)',
+          '--tx':`${Math.cos(r)*p.dist}px`, '--ty':`${Math.sin(r)*p.dist}px`,
+          animation:`burst .9s ${p.del}s ease-out forwards`,
+        }}/>;
+      })}
+    </div>
+  );
+};
+
+/* ════════════════════════════════════════════════════════
+   LOGIN SCREEN
+════════════════════════════════════════════════════════ */
+function LoginScreen({onLogin}) {
+  const [eid,setEid]     = useState('');
+  const [pin,setPin]     = useState('');
+  const [err,setErr]     = useState('');
+  const [loading,setLd]  = useState(false);
+
+  const emp = DATA.clientes.find(c=>c.id===+eid);
+
+  const tap = d => {
+    if(pin.length>=6) return;
+    setPin(p=>p+d); setErr('');
+  };
+  const del = () => setPin(p=>p.slice(0,-1));
+
+  const submit = () => {
+    if(!eid)         { setErr('Selecciona una empresa'); return; }
+    if(pin.length<4) { setErr('Ingresa tu PIN de 4 dígitos'); return; }
+    setLd(true);
+    setTimeout(()=>{ setLd(false); onLogin(emp); }, 1100);
+  };
+
+  const keys = [1,2,3,4,5,6,7,8,9,'',0,'⌫'];
+
+  return (
+    <div style={{
+      height:'100%', padding:24,
+      background:'linear-gradient(160deg,#0c0c18 0%,#111118 55%,#080f1a 100%)',
+      display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:22,
+    }}>
+
+      {/* Logo */}
+      <div className="anim-fade" style={{textAlign:'center',animationDelay:'.05s'}}>
+        <div style={{
+          width:82,height:82,borderRadius:26,margin:'0 auto 14px',
+          background:'linear-gradient(140deg,#EA580C 0%,#F97316 100%)',
+          display:'flex',alignItems:'center',justifyContent:'center',
+          fontSize:42,
+          boxShadow:'0 8px 36px rgba(234,88,12,.45)',
+          animation:'popIn .55s cubic-bezier(.22,.68,0,1.2)',
+        }}>🚛</div>
+        <div style={{fontSize:20,fontWeight:700,letterSpacing:2,color:'var(--text)'}}>VIATRUCK CENTER</div>
+        <div style={{fontSize:12,color:'var(--text-dim)',marginTop:4,letterSpacing:.5}}>Portal de clientes</div>
+      </div>
+
+      {/* Card */}
+      <div className="anim-fade" style={{
+        width:'100%', background:'var(--bg2)', borderRadius:22,
+        padding:20, border:'1px solid var(--border)',
+        animationDelay:'.18s',
+      }}>
+
+        {/* Empresa */}
+        <label style={{fontSize:10,color:'var(--text-dim)',fontWeight:700,letterSpacing:1.3,display:'block',marginBottom:6}}>
+          EMPRESA
+        </label>
+        <div style={{position:'relative',marginBottom:16}}>
+          <select value={eid} onChange={e=>setEid(e.target.value)} style={{
+            width:'100%', padding:'12px 14px',
+            background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:12,
+            color: eid?'var(--text)':'var(--text-dim)',
+            fontSize:14, fontFamily:'var(--sans)', appearance:'none', outline:'none',
+          }}>
+            <option value="">Seleccionar empresa...</option>
+            {DATA.clientes.map(c=>(
+              <option key={c.id} value={c.id}>{c.empresa}</option>
+            ))}
+          </select>
+          <div style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',color:'var(--text-dim)',pointerEvents:'none',fontSize:12}}>▾</div>
+        </div>
+        {emp && (
+          <div style={{fontSize:11,color:'var(--text-dim)',marginTop:-10,marginBottom:16,paddingLeft:2,
+            fontFamily:'var(--mono)'}}>
+            RUT: {emp.rut}
+          </div>
+        )}
+
+        {/* PIN dots */}
+        <label style={{fontSize:10,color:'var(--text-dim)',fontWeight:700,letterSpacing:1.3,display:'block',marginBottom:10}}>
+          PIN DE ACCESO
+        </label>
+        <div style={{display:'flex',gap:10,justifyContent:'center',marginBottom:16}}>
+          {[0,1,2,3].map(i=>(
+            <div key={i} style={{
+              width:54,height:54,borderRadius:15,
+              background: pin.length>i ? 'linear-gradient(135deg,#EA580C,#F97316)' : 'var(--bg3)',
+              border:`2px solid ${pin.length>i?'#EA580C':'var(--border)'}`,
+              display:'flex',alignItems:'center',justifyContent:'center',
+              fontSize:22,color:'white',
+              transition:'all .18s cubic-bezier(.22,.68,0,1.2)',
+              transform: pin.length>i ? 'scale(1.06)' : 'scale(1)',
+            }}>
+              {pin.length>i ? '●' : ''}
+            </div>
+          ))}
+        </div>
+
+        {/* Numpad */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:16}}>
+          {keys.map((k,i)=>(
+            <NumKey key={i} val={k} onTap={()=>k==='⌫'?del():k!==''&&tap(String(k))} />
+          ))}
+        </div>
+
+        {err && (
+          <div style={{color:'#DC2626',fontSize:12,textAlign:'center',marginBottom:10,
+            animation:'fadeInUp .25s ease'}}>
+            {err}
+          </div>
+        )}
+
+        <Btn onClick={submit} disabled={loading}>
+          {loading ? <span style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+            <span style={{width:16,height:16,borderRadius:'50%',border:'2px solid rgba(255,255,255,.3)',
+              borderTopColor:'white',display:'inline-block',animation:'spin .7s linear infinite'}}/>
+            Verificando...
+          </span> : 'INGRESAR →'}
+        </Btn>
+
+        <div style={{textAlign:'center',marginTop:12,fontSize:11,color:'var(--text-faint)'}}>
+          Demo: cualquier PIN de 4+ dígitos
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NumKey({val,onTap}) {
+  const [p,setP]=useState(false);
+  return (
+    <button
+      onClick={onTap}
+      onPointerDown={()=>setP(true)}
+      onPointerUp={()=>setP(false)}
+      onPointerLeave={()=>setP(false)}
+      style={{
+        padding:'14px 0', borderRadius:12, border:'none',
+        background: val===''?'transparent':'var(--bg3)',
+        color:'var(--text)', fontSize: val==='⌫'?18:22,
+        fontWeight:500, fontFamily:'var(--sans)',
+        cursor: val===''?'default':'pointer',
+        transform: p?'scale(0.90)':'scale(1)',
+        transition:'transform .12s',
+      }}
+    >{val}</button>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   TOP BAR
+════════════════════════════════════════════════════════ */
+function TopBar({empresa,notifCount,onNotif}) {
+  return (
+    <div style={{
+      padding:'44px 20px 14px',
+      background:'linear-gradient(180deg,#0a0a14 0%,var(--bg1) 100%)',
+      display:'flex',alignItems:'center',justifyContent:'space-between',
+      flexShrink:0, borderBottom:'1px solid rgba(255,255,255,.03)',
+    }}>
+      <div>
+        <div style={{fontSize:9,color:'var(--text-dim)',letterSpacing:2,fontWeight:700}}>VIATRUCK CENTER</div>
+        <div style={{fontSize:16,fontWeight:700,color:'var(--text)',marginTop:1}}>
+          {empresa?.empresa?.split(' ').slice(0,2).join(' ')}
+        </div>
+      </div>
+      <button onClick={onNotif} style={{
+        position:'relative', background:'var(--bg3)', border:'1px solid var(--border)',
+        borderRadius:12, width:42,height:42, display:'flex',alignItems:'center',justifyContent:'center',
+        fontSize:18, cursor:'pointer',
+      }}>
+        🔔
+        {notifCount>0 && (
+          <div style={{
+            position:'absolute',top:-4,right:-4,
+            background:'#DC2626', color:'white',
+            width:18,height:18,borderRadius:'50%',
+            fontSize:10,fontWeight:700,
+            display:'flex',alignItems:'center',justifyContent:'center',
+            animation:'popIn .3s ease',
+          }}>{notifCount}</div>
+        )}
+      </button>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   HOME — MIS CAMIONES
+════════════════════════════════════════════════════════ */
+function HomeScreen({empresa,onSelect}) {
+  const activo = empresa.camiones.find(c=>c.estado==='en_taller');
+  return (
+    <div style={{padding:'16px 16px 0'}} className="anim-fade">
+      <div style={{fontSize:22,fontWeight:700,color:'var(--text)',marginBottom:2}}>
+        Hola, {empresa.empresa.split(' ')[0]} 👋
+      </div>
+      <div style={{fontSize:13,color:'var(--text-dim)',marginBottom:20}}>
+        {empresa.camiones.length} camiones · {empresa.rut}
+      </div>
+
+      {/* Card activa */}
+      {activo && (
+        <div onClick={()=>onSelect(activo)} style={{
+          background:'linear-gradient(135deg,rgba(234,88,12,.18) 0%,rgba(234,88,12,.05) 100%)',
+          border:'1px solid rgba(234,88,12,.38)',
+          borderRadius:22, padding:'18px 18px 16px', marginBottom:22,
+          cursor:'pointer', position:'relative', overflow:'hidden',
+          transition:'transform .18s',
+        }}
+          onPointerDown={e=>e.currentTarget.style.transform='scale(0.97)'}
+          onPointerUp={e=>e.currentTarget.style.transform='scale(1)'}
+          onPointerLeave={e=>e.currentTarget.style.transform='scale(1)'}
+        >
+          <div style={{position:'absolute',bottom:-16,right:-10,fontSize:90,opacity:.05,userSelect:'none'}}>🔧</div>
+          <div style={{
+            display:'inline-flex', alignItems:'center', gap:5,
+            background:'rgba(234,88,12,.18)', border:'1px solid rgba(234,88,12,.35)',
+            borderRadius:8, padding:'3px 10px', marginBottom:10,
+          }}>
+            <div style={{width:6,height:6,borderRadius:'50%',background:'#EA580C',animation:'pulse 1.4s infinite'}}/>
+            <span style={{fontSize:10,fontWeight:700,color:'#EA580C',letterSpacing:1}}>EN TALLER AHORA</span>
+          </div>
+          <div style={{fontFamily:'var(--mono)',fontSize:26,fontWeight:500,color:'var(--text)',marginBottom:2}}>
+            {activo.ppu}
+          </div>
+          <div style={{fontSize:13,color:'var(--text-dim)',marginBottom:14}}>{activo.modelo} · {activo.year}</div>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <div style={{width:32,height:32,borderRadius:9,background:'linear-gradient(135deg,#EA580C,#F97316)',
+              display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'white'}}>RT</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{DATA.mecanico.nombre}</div>
+              <div style={{fontSize:11,color:'var(--text-dim)'}}>OT-2025-089 · ETA {DATA.ot.eta}</div>
+            </div>
+            <div style={{fontSize:13,fontWeight:700,color:'#EA580C'}}>Ver OT →</div>
+          </div>
+        </div>
+      )}
+
+      <SectionLabel>FLOTA COMPLETA</SectionLabel>
+      <div style={{display:'flex',flexDirection:'column',gap:10,paddingBottom:16}}>
+        {empresa.camiones.map((c,i)=>{
+          const cfg=ESTADO[c.estado];
+          return (
+            <div key={c.ppu} onClick={()=>onSelect(c)} style={{
+              background:'var(--bg2)', borderRadius:18, padding:'14px 16px',
+              border:`1px solid ${c.estado==='en_taller'?'rgba(234,88,12,.25)':'var(--border)'}`,
+              cursor:'pointer', display:'flex', alignItems:'center', gap:14,
+              animation:`cardIn .4s ${i*.08}s ease both`,
+              transition:'transform .15s',
+            }}
+              onPointerDown={e=>e.currentTarget.style.transform='scale(0.97)'}
+              onPointerUp={e=>e.currentTarget.style.transform='scale(1)'}
+              onPointerLeave={e=>e.currentTarget.style.transform='scale(1)'}
+            >
+              <div style={{
+                width:48,height:48,borderRadius:14,
+                background:cfg.bg,
+                display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,
+              }}>🚛</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontFamily:'var(--mono)',fontSize:17,fontWeight:500,color:'var(--text)'}}>{c.ppu}</div>
+                <div style={{fontSize:11,color:'var(--text-dim)',marginTop:2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                  {c.modelo} · {c.year} · {(c.km/1000).toFixed(0)}k km
+                </div>
+              </div>
+              <div style={{
+                padding:'4px 10px', borderRadius:8,
+                background:cfg.bg, color:cfg.col,
+                fontSize:9,fontWeight:700,letterSpacing:.8,
+                whiteSpace:'nowrap',
+              }}>{cfg.lbl}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   DIAGNÓSTICO
+════════════════════════════════════════════════════════ */
+function DiagnosticoScreen({camion,onNext,onBack}) {
+  const URG = {
+    critico: {col:'#DC2626', bg:'rgba(220,38,38,.1)',  lbl:'● CRÍTICO'},
+    media:   {col:'#F59E0B', bg:'rgba(245,158,11,.1)', lbl:'● MEDIA'  },
+    menor:   {col:'#059669', bg:'rgba(5,150,105,.1)',  lbl:'● MENOR'  },
+  };
+  return (
+    <div style={{padding:'0 16px 20px'}} className="anim-fade">
+      {/* Header */}
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
+        <BackBtn onClick={onBack}/>
+        <div style={{flex:1}}>
+          <div style={{fontFamily:'var(--mono)',fontSize:20,color:'var(--text)'}}>{camion.ppu}</div>
+          <div style={{fontSize:12,color:'var(--text-dim)'}}>{camion.modelo}</div>
+        </div>
+      </div>
+
+      {/* Estado badge */}
+      <div style={{
+        background:'rgba(245,158,11,.08)', border:'1px solid rgba(245,158,11,.28)',
+        borderRadius:14, padding:'12px 16px', marginBottom:18,
+        display:'flex',alignItems:'center',gap:10,
+      }}>
+        <span style={{fontSize:22}}>📋</span>
+        <div>
+          <div style={{fontSize:13,fontWeight:700,color:'#F59E0B'}}>Diagnóstico completado</div>
+          <div style={{fontSize:12,color:'var(--text-dim)'}}>Esperando tu aprobación para iniciar la reparación</div>
+        </div>
+      </div>
+
+      <SectionLabel>FALLAS ENCONTRADAS</SectionLabel>
+      <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:18}}>
+        {DATA.fallas.map((f,i)=>{
+          const u=URG[f.urg];
+          return (
+            <div key={i} style={{
+              background:'var(--bg2)', borderRadius:16, padding:'14px 16px',
+              border:`1px solid ${u.col}28`,
+              animation:`fadeInUp .4s ${i*.1}s ease both`,
+            }}>
+              <div style={{
+                display:'inline-block', padding:'3px 10px', borderRadius:7,
+                background:u.bg, color:u.col,
+                fontSize:10,fontWeight:700,letterSpacing:.8,marginBottom:8,
+              }}>{u.lbl}</div>
+              <div style={{fontSize:14,fontWeight:600,color:'var(--text)',marginBottom:5}}>{f.desc}</div>
+              <div style={{fontSize:12,color:'var(--text-dim)',lineHeight:1.6}}>{f.obs}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Observaciones mecánico */}
+      <SectionLabel>OBSERVACIONES DEL MECÁNICO</SectionLabel>
+      <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:16,padding:16,marginBottom:20}}>
+        <div style={{fontSize:13,color:'#c8c8dc',lineHeight:1.7,marginBottom:12}}>{DATA.obsGenerales}</div>
+        <div style={{display:'flex',alignItems:'center',gap:10,paddingTop:10,borderTop:'1px solid var(--border)'}}>
+          <div style={{width:30,height:30,borderRadius:8,background:'linear-gradient(135deg,#EA580C,#F97316)',
+            display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'white'}}>RT</div>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{DATA.mecanico.nombre}</div>
+            <div style={{fontSize:11,color:'var(--text-dim)'}}>{DATA.mecanico.esp} · ⭐ {DATA.mecanico.rating}</div>
+          </div>
+        </div>
+      </div>
+
+      <Btn onClick={onNext}>Ver Cotización →</Btn>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   COTIZACIÓN
+════════════════════════════════════════════════════════ */
+function CotizacionScreen({camion,onApprove,onBack}) {
+  const [mode,setMode]     = useState('default');
+  const [sel,setSel]       = useState(DATA.items.map(i=>i.id));
+  const [burst,setBurst]   = useState(false);
+  const [done,setDone]     = useState(false);
+
+  const total    = DATA.items.reduce((s,i)=>s+i.precio+i.mo,0);
+  const selTotal = DATA.items.filter(i=>sel.includes(i.id)).reduce((s,i)=>s+i.precio+i.mo,0);
+
+  const approve = () => {
+    setBurst(true);
+    setTimeout(()=>{ setBurst(false); setDone(true); },850);
+    setTimeout(onApprove,2400);
+  };
+
+  const toggle = id => setSel(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id]);
+
+  if(done) return (
+    <div style={{height:'100%',display:'flex',flexDirection:'column',alignItems:'center',
+      justifyContent:'center',padding:28,textAlign:'center',position:'relative'}} className="anim-fade">
+      <Particles active={burst}/>
+      <div style={{fontSize:80,marginBottom:16,animation:'popIn .55s cubic-bezier(.22,.68,0,1.2)'}}>✅</div>
+      <div style={{fontSize:24,fontWeight:700,color:'#059669',marginBottom:8}}>¡Cotización Aprobada!</div>
+      <div style={{fontSize:14,color:'var(--text-dim)',lineHeight:1.6}}>
+        El equipo ya está trabajando en tu camión.<br/>Te notificaremos cada avance.
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{padding:'0 16px 20px',position:'relative'}} className="anim-fade">
+      <Particles active={burst}/>
+
+      {/* Header */}
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
+        <BackBtn onClick={onBack}/>
+        <div style={{flex:1}}>
+          <div style={{fontSize:16,fontWeight:700,color:'var(--text)'}}>Cotización</div>
+          <div style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--text-dim)'}}>{camion.ppu} · {camion.modelo}</div>
+        </div>
+        {mode==='select' && (
+          <div style={{fontSize:12,color:'#EA580C',fontWeight:600}}>
+            {sel.length}/{DATA.items.length} sel.
+          </div>
+        )}
+      </div>
+
+      {/* Items */}
+      <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:18}}>
+        {DATA.items.map((item,i)=>{
+          const checked = sel.includes(item.id);
+          return (
+            <div key={item.id}
+              onClick={()=>mode==='select'&&toggle(item.id)}
+              style={{
+                background:'var(--bg2)', borderRadius:16, padding:'14px 16px',
+                border:`1px solid ${mode==='select'&&checked?'rgba(234,88,12,.4)':'var(--border)'}`,
+                cursor: mode==='select'?'pointer':'default',
+                animation:`fadeInUp .4s ${i*.08}s ease both`,
+                transition:'border-color .2s',
+              }}
+            >
+              <div style={{display:'flex',alignItems:'flex-start',gap:10}}>
+                {mode==='select' && (
+                  <div style={{
+                    width:22,height:22,borderRadius:7,marginTop:1,flexShrink:0,
+                    border:`2px solid ${checked?'#EA580C':'var(--border)'}`,
+                    background: checked?'#EA580C':'transparent',
+                    display:'flex',alignItems:'center',justifyContent:'center',
+                    transition:'all .18s',
+                  }}>
+                    {checked && <span style={{color:'white',fontSize:13,fontWeight:700,
+                      animation:'checkPop .25s ease'}}>✓</span>}
+                  </div>
+                )}
+                <div style={{flex:1}}>
+                  <div style={{fontSize:14,fontWeight:600,color:'var(--text)',marginBottom:8}}>{item.nombre}</div>
+                  <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:10}}>
+                    {[item.marca, `×${item.qty}`].map(tag=>(
+                      <span key={tag} style={{
+                        fontSize:10,padding:'2px 9px',borderRadius:6,
+                        background:'var(--bg3)',color:'var(--text-dim)',border:'1px solid var(--border)',
+                      }}>{tag}</span>
+                    ))}
+                  </div>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:8}}>
+                    <span><span style={{color:'var(--text-dim)'}}>Repuesto: </span>
+                      <span style={{color:'var(--text)',fontFamily:'var(--mono)'}}>{clp(item.precio)}</span></span>
+                    {item.mo>0 && (
+                      <span><span style={{color:'var(--text-dim)'}}>M.O.: </span>
+                        <span style={{color:'var(--text)',fontFamily:'var(--mono)'}}>{clp(item.mo)}</span></span>
+                    )}
+                  </div>
+                  <div style={{borderTop:'1px solid var(--border)',paddingTop:8,
+                    display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <span style={{fontSize:12,color:'var(--text-dim)'}}>Subtotal</span>
+                    <span style={{fontSize:15,fontWeight:700,color:'#EA580C',fontFamily:'var(--mono)'}}>
+                      {clp(item.precio+item.mo)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Resumen */}
+      <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:18,padding:16,marginBottom:20}}>
+        {[
+          ['Repuestos', DATA.items.reduce((s,i)=>s+i.precio,0)],
+          ['Mano de obra', DATA.items.reduce((s,i)=>s+i.mo,0)],
+        ].map(([lbl,v])=>(
+          <div key={lbl} style={{display:'flex',justifyContent:'space-between',marginBottom:10}}>
+            <span style={{fontSize:13,color:'var(--text-dim)'}}>{lbl}</span>
+            <span style={{fontSize:13,color:'var(--text)',fontFamily:'var(--mono)'}}>{clp(v)}</span>
+          </div>
+        ))}
+        <div style={{borderTop:'1px solid var(--border)',paddingTop:12,
+          display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <span style={{fontSize:16,fontWeight:700,color:'var(--text)'}}>TOTAL</span>
+          <span style={{fontSize:22,fontWeight:700,color:'#EA580C',fontFamily:'var(--mono)'}}>
+            {clp(mode==='select'?selTotal:total)}
+          </span>
+        </div>
+      </div>
+
+      {/* Acciones */}
+      <div style={{display:'flex',flexDirection:'column',gap:10}}>
+        <Btn onClick={approve} variant="green">✅ APROBAR TODO</Btn>
+        <Btn onClick={()=>setMode(m=>m==='select'?'default':'select')} variant="ghost">
+          {mode==='select'?'✓ CONFIRMAR SELECCIÓN':'⚙️ SELECCIONAR ÍTEMS'}
+        </Btn>
+        <Btn variant="danger">❌ RECHAZAR</Btn>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   ORDEN DE TRABAJO
+════════════════════════════════════════════════════════ */
+function OTScreen({camion,onChat,onBack}) {
+  const [tareas,setTareas] = useState(DATA.ot.tareas);
+  const [burst,setBurst]   = useState(false);
+  const [listo,setListo]   = useState(false);
+
+  const doneCount = tareas.filter(t=>t.estado==='done').length;
+  const pct       = (doneCount/tareas.length)*100;
+
+  useEffect(()=>{
+    const iv=setInterval(()=>{
+      setTareas(prev=>{
+        const pi=prev.findIndex(t=>t.estado==='progress');
+        const qi=prev.findIndex(t=>t.estado==='pending');
+        if(pi===-1&&qi===-1){ clearInterval(iv); return prev; }
+        const next=[...prev];
+        if(pi!==-1) next[pi]={...next[pi],estado:'done',hora:now()};
+        if(qi!==-1) next[qi]={...next[qi],estado:'progress'};
+        return next;
+      });
+    },4000);
+    return()=>clearInterval(iv);
+  },[]);
+
+  useEffect(()=>{
+    if(tareas.every(t=>t.estado==='done')&&!listo){
+      setTimeout(()=>{ setBurst(true); setTimeout(()=>{ setBurst(false); setListo(true); },1000); },600);
+    }
+  },[tareas]);
+
+  if(listo) return (
+    <div style={{height:'100%',display:'flex',flexDirection:'column',alignItems:'center',
+      justifyContent:'center',padding:28,textAlign:'center',position:'relative'}} className="anim-fade">
+      <Particles active/>
+      <div style={{fontSize:80,marginBottom:16,animation:'popIn .6s cubic-bezier(.22,.68,0,1.2)'}}>🚛</div>
+      <div style={{fontSize:24,fontWeight:700,color:'#059669',marginBottom:10}}>¡Listo para Retiro!</div>
+      <div style={{fontSize:14,color:'var(--text-dim)',lineHeight:1.7}}>
+        Tu camión <strong style={{color:'var(--text)',fontFamily:'var(--mono)'}}>{camion.ppu}</strong> está listo.<br/>
+        Pasa a retirarlo en horario de atención.
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{padding:'0 16px 20px',position:'relative'}} className="anim-fade">
+      <Particles active={burst}/>
+
+      {/* Header */}
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
+        <BackBtn onClick={onBack}/>
+        <div style={{flex:1}}>
+          <div style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--text-dim)'}}>{DATA.ot.numero} · {DATA.ot.fecha}</div>
+          <div style={{fontSize:16,fontWeight:700,color:'var(--text)'}}>{camion.ppu} — En progreso</div>
+        </div>
+      </div>
+
+      {/* Mecánico */}
+      <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:18,
+        padding:'14px 16px',marginBottom:14,display:'flex',alignItems:'center',gap:12}}>
+        <div style={{width:48,height:48,borderRadius:14,flexShrink:0,
+          background:'linear-gradient(135deg,#EA580C,#F97316)',
+          display:'flex',alignItems:'center',justifyContent:'center',
+          fontSize:16,fontWeight:700,color:'white'}}>RT</div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:14,fontWeight:700,color:'var(--text)'}}>{DATA.mecanico.nombre}</div>
+          <div style={{fontSize:12,color:'var(--text-dim)'}}>{DATA.mecanico.esp} · ⭐ {DATA.mecanico.rating}</div>
+        </div>
+        <div style={{textAlign:'right'}}>
+          <div style={{fontSize:10,color:'var(--text-dim)'}}>ETA</div>
+          <div style={{fontFamily:'var(--mono)',fontSize:15,fontWeight:700,color:'#0891B2'}}>{DATA.ot.eta}</div>
+        </div>
+      </div>
+
+      {/* Progreso */}
+      <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:18,
+        padding:'14px 16px',marginBottom:18}}>
+        <div style={{display:'flex',justifyContent:'space-between',marginBottom:10}}>
+          <span style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>Progreso</span>
+          <span style={{fontFamily:'var(--mono)',fontSize:13,color:'#EA580C',fontWeight:600}}>
+            {doneCount} / {tareas.length} tareas
+          </span>
+        </div>
+        <div style={{height:10,background:'var(--bg3)',borderRadius:6,overflow:'hidden'}}>
+          <div style={{
+            height:'100%',borderRadius:6,
+            background:'linear-gradient(90deg,#EA580C,#F97316)',
+            width:`${pct}%`,
+            transition:'width .9s cubic-bezier(.22,.68,0,1.2)',
+            animation: doneCount>0?'progressGlow 2s infinite':undefined,
+          }}/>
+        </div>
+        <div style={{fontSize:11,color:'var(--text-faint)',marginTop:7,textAlign:'right'}}>
+          {Math.round(pct)}% completado
+        </div>
+      </div>
+
+      <SectionLabel>TAREAS DE LA OT</SectionLabel>
+      <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:16}}>
+        {tareas.map(t=>(
+          <div key={t.id} style={{
+            background:'var(--bg2)', borderRadius:14, padding:'12px 14px',
+            border:`1px solid ${
+              t.estado==='progress'?'rgba(234,88,12,.35)':
+              t.estado==='done'?'rgba(5,150,105,.25)':
+              'var(--border)'}`,
+            display:'flex',alignItems:'center',gap:12,
+            opacity:t.estado==='pending'?.55:1,
+            transition:'all .5s ease',
+          }}>
+            {/* Status icon */}
+            {t.estado==='done' && (
+              <div style={{width:26,height:26,borderRadius:'50%',background:'#059669',
+                display:'flex',alignItems:'center',justifyContent:'center',
+                fontSize:14,color:'white',flexShrink:0,animation:'checkPop .3s ease'}}>✓</div>
+            )}
+            {t.estado==='progress' && (
+              <div style={{width:26,height:26,borderRadius:'50%',flexShrink:0,
+                background:'rgba(234,88,12,.15)',border:'2px solid #EA580C',
+                display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <div style={{width:9,height:9,borderRadius:'50%',background:'#EA580C',
+                  animation:'pulse 1.3s ease-in-out infinite'}}/>
+              </div>
+            )}
+            {t.estado==='pending' && (
+              <div style={{width:26,height:26,borderRadius:'50%',flexShrink:0,
+                background:'var(--bg3)',border:'2px solid var(--border)'}}/>
+            )}
+
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{
+                fontSize:13,
+                color:t.estado==='done'?'var(--text-dim)':'var(--text)',
+                fontWeight:t.estado==='progress'?600:400,
+              }}>{t.txt}</div>
+            </div>
+
+            <div style={{textAlign:'right',flexShrink:0}}>
+              {t.hora && <div style={{fontFamily:'var(--mono)',fontSize:11,color:'#059669'}}>{t.hora}</div>}
+              {t.estado==='progress' && (
+                <div style={{fontSize:9,fontWeight:700,color:'#EA580C',letterSpacing:.8}}>EN CURSO</div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Btn onClick={onChat} variant="ghost" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+        💬 Chat con el mecánico
+      </Btn>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   CHAT
+════════════════════════════════════════════════════════ */
+const AUTO_REPLIES = [
+  "Ya estamos trabajando en ello! 🔧",
+  "Sin problemas, cualquier consulta me avisas.",
+  "El camión va bien, no te preocupes 👍",
+  "Recibido! Te actualizo en unos minutos.",
+  "Todo bajo control, seguimos al 100%.",
+];
+
+function ChatScreen({empresa,onBack}) {
+  const [msgs,setMsgs] = useState(DATA.msgs);
+  const [val,setVal]   = useState('');
+  const endRef         = useRef(null);
+
+  const send = () => {
+    if(!val.trim()) return;
+    const h=now();
+    setMsgs(m=>[...m,{id:Date.now(),de:'cli',txt:val,hora:h}]);
+    setVal('');
+    const reply=AUTO_REPLIES[Math.floor(Math.random()*AUTO_REPLIES.length)];
+    setTimeout(()=>setMsgs(m=>[...m,{id:Date.now()+1,de:'mec',txt:reply,hora:now()}]),1400);
+  };
+
+  useEffect(()=>{ endRef.current?.scrollIntoView({behavior:'smooth'}); },[msgs]);
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}} className="anim-fade">
+      {/* Header */}
+      <div style={{padding:'0 16px 12px',flexShrink:0}}>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <BackBtn onClick={onBack}/>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:700,color:'var(--text)'}}>{DATA.mecanico.nombre}</div>
+            <div style={{fontSize:11,color:'#059669',display:'flex',alignItems:'center',gap:5}}>
+              <span style={{width:6,height:6,borderRadius:'50%',background:'#059669',display:'inline-block',
+                animation:'pulse 2s infinite'}}/>
+              En línea · {DATA.mecanico.esp}
+            </div>
+          </div>
+          <div style={{width:38,height:38,borderRadius:10,
+            background:'linear-gradient(135deg,#EA580C,#F97316)',
+            display:'flex',alignItems:'center',justifyContent:'center',
+            fontSize:14,fontWeight:700,color:'white'}}>RT</div>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div style={{flex:1,overflowY:'auto',padding:'0 16px',display:'flex',
+        flexDirection:'column',gap:10,scrollbarWidth:'none'}}>
+        {msgs.map((m,i)=>(
+          <div key={m.id} style={{
+            display:'flex',flexDirection:'column',
+            alignItems:m.de==='cli'?'flex-end':'flex-start',
+            animation:i===msgs.length-1?'fadeInUp .3s ease':'none',
+          }}>
+            <div style={{
+              maxWidth:'80%',padding:'10px 14px',borderRadius:18,
+              background:m.de==='cli'?'linear-gradient(135deg,#EA580C,#F97316)':'var(--bg3)',
+              border:m.de==='mec'?'1px solid var(--border)':'none',
+              color:'var(--text)',fontSize:13,lineHeight:1.55,
+              borderBottomRightRadius:m.de==='cli'?4:18,
+              borderBottomLeftRadius:m.de==='mec'?4:18,
+            }}>{m.txt}</div>
+            <div style={{fontSize:10,color:'var(--text-faint)',marginTop:3,padding:'0 4px'}}>{m.hora}</div>
+          </div>
+        ))}
+        <div ref={endRef}/>
+      </div>
+
+      {/* Input */}
+      <div style={{
+        padding:'10px 16px 24px',flexShrink:0,
+        display:'flex',gap:10,
+        background:'var(--bg1)',borderTop:'1px solid var(--border)',
+      }}>
+        <input
+          value={val}
+          onChange={e=>setVal(e.target.value)}
+          onKeyDown={e=>e.key==='Enter'&&send()}
+          placeholder="Escribe un mensaje..."
+          style={{
+            flex:1,padding:'12px 16px',borderRadius:14,
+            background:'var(--bg3)',border:'1px solid var(--border)',
+            color:'var(--text)',fontSize:13,fontFamily:'var(--sans)',outline:'none',
+          }}
+        />
+        <button onClick={send} style={{
+          width:48,height:48,borderRadius:14,border:'none',flexShrink:0,
+          background:'linear-gradient(135deg,#EA580C,#F97316)',
+          color:'white',fontSize:20,cursor:'pointer',
+          display:'flex',alignItems:'center',justifyContent:'center',
+        }}>↑</button>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   HISTORIAL
+════════════════════════════════════════════════════════ */
+function HistorialScreen({camion,onBack}) {
+  return (
+    <div style={{padding:'0 16px 20px'}} className="anim-fade">
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
+        <BackBtn onClick={onBack}/>
+        <div style={{flex:1}}>
+          <div style={{fontSize:16,fontWeight:700,color:'var(--text)'}}>Historial de servicio</div>
+          <div style={{fontFamily:'var(--mono)',fontSize:12,color:'var(--text-dim)'}}>{camion?.ppu||'BKF-1104'}</div>
+        </div>
+      </div>
+
+      {/* Badge próximo */}
+      <div style={{
+        background:'rgba(8,145,178,.09)',border:'1px solid rgba(8,145,178,.28)',
+        borderRadius:14,padding:'12px 16px',marginBottom:22,
+        display:'flex',alignItems:'center',gap:12,
+      }}>
+        <span style={{fontSize:22}}>📅</span>
+        <div>
+          <div style={{fontSize:12,fontWeight:700,color:'#0891B2'}}>PRÓXIMO MANTENIMIENTO</div>
+          <div style={{fontSize:13,color:'var(--text)',marginTop:2}}>Aproximadamente en 5.000 km</div>
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <SectionLabel>VISITAS ANTERIORES</SectionLabel>
+      <div style={{position:'relative',paddingLeft:22}}>
+        <div style={{position:'absolute',left:8,top:0,bottom:0,width:2,
+          background:'linear-gradient(180deg,#EA580C 0%,var(--border) 100%)',borderRadius:2}}/>
+
+        {DATA.historial.map((h,i)=>(
+          <div key={i} style={{
+            position:'relative',marginBottom:16,
+            animation:`fadeInUp .45s ${i*.1}s ease both`,
+          }}>
+            {/* Dot */}
+            <div style={{
+              position:'absolute',left:-24,top:18,
+              width:16,height:16,borderRadius:'50%',
+              background:i===0?'#EA580C':'var(--bg3)',
+              border:`3px solid ${i===0?'#EA580C':'var(--border)'}`,
+              boxShadow:i===0?'0 0 10px rgba(234,88,12,.5)':undefined,
+              zIndex:1,
+            }}/>
+
+            <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:18,padding:16}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:10}}>
+                <div>
+                  <div style={{fontSize:14,fontWeight:700,color:'var(--text)'}}>{h.servicio}</div>
+                  <div style={{fontSize:11,color:'var(--text-dim)',marginTop:2}}>{h.fecha} · {h.mecanico}</div>
+                </div>
+                <div style={{fontFamily:'var(--mono)',fontSize:14,fontWeight:700,color:'#EA580C',textAlign:'right'}}>
+                  {clp(h.costo)}
+                </div>
+              </div>
+
+              <div style={{marginBottom:10}}>
+                {h.trabajos.map((t,j)=>(
+                  <div key={j} style={{fontSize:12,color:'#c0c0d8',padding:'2px 0',display:'flex',alignItems:'center',gap:6}}>
+                    <span style={{color:'#059669'}}>✓</span>{t}
+                  </div>
+                ))}
+              </div>
+
+              <div style={{borderTop:'1px solid var(--border)',paddingTop:10}}>
+                <div style={{fontSize:10,color:'var(--text-dim)',fontWeight:700,letterSpacing:1,marginBottom:5}}>REPUESTOS</div>
+                {h.repuestos.map((r,j)=>(
+                  <div key={j} style={{fontSize:11,color:'var(--text-faint)',padding:'1px 0'}}>· {r}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   NOTIFICACIONES
+════════════════════════════════════════════════════════ */
+const NTIPO = {
+  alerta: {icon:'🔔', col:'#F59E0B', bg:'rgba(245,158,11,.09)'},
+  ok:     {icon:'✅', col:'#059669', bg:'rgba(5,150,105,.09)' },
+  info:   {icon:'🚛', col:'#0891B2', bg:'rgba(8,145,178,.09)' },
+  prox:   {icon:'📅', col:'#8888a0', bg:'rgba(136,136,160,.09)'},
+};
+
+function NotificacionesScreen({onBack}) {
+  return (
+    <div style={{padding:'0 16px 20px'}} className="anim-fade">
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
+        <BackBtn onClick={onBack}/>
+        <div style={{fontSize:16,fontWeight:700,color:'var(--text)'}}>Notificaciones</div>
+      </div>
+
+      <div style={{display:'flex',flexDirection:'column',gap:10}}>
+        {DATA.notifs.map((n,i)=>{
+          const cfg=NTIPO[n.tipo];
+          return (
+            <div key={n.id} style={{
+              background:n.nueva?cfg.bg:'var(--bg2)',
+              border:`1px solid ${n.nueva?cfg.col+'35':'var(--border)'}`,
+              borderRadius:16,padding:'14px 16px',
+              display:'flex',gap:12,alignItems:'flex-start',
+              animation:`slideDown .3s ${i*.07}s ease both`,
+            }}>
+              <span style={{fontSize:22,flexShrink:0}}>{cfg.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,color:n.nueva?'var(--text)':'var(--text-dim)',lineHeight:1.45}}>{n.txt}</div>
+                <div style={{fontSize:11,color:'var(--text-faint)',marginTop:5}}>{n.t}</div>
+              </div>
+              {n.nueva && (
+                <div style={{width:8,height:8,borderRadius:'50%',background:cfg.col,flexShrink:0,marginTop:5,
+                  animation:'pulse 2s infinite'}}/>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   TAB BAR
+════════════════════════════════════════════════════════ */
+function TabBar({view,setView,hasActivo}) {
+  const TABS=[
+    {id:'home',    icon:'🚛', lbl:'Flota'    },
+    {id:'ot',      icon:'🔧', lbl:'OT Activa', locked:!hasActivo},
+    {id:'chat',    icon:'💬', lbl:'Chat'     },
+    {id:'historial',icon:'📋',lbl:'Historial'},
+  ];
+  return (
+    <div style={{
+      display:'flex',background:'var(--bg0)',
+      borderTop:'1px solid rgba(255,255,255,.05)',
+      padding:'6px 0 20px',flexShrink:0,
+    }}>
+      {TABS.map(t=>{
+        const active=view===t.id;
+        return (
+          <button key={t.id}
+            onClick={()=>!t.locked&&setView(t.id)}
+            style={{
+              flex:1,display:'flex',flexDirection:'column',alignItems:'center',
+              gap:2,background:'none',border:'none',
+              cursor:t.locked?'default':'pointer',
+              opacity:t.locked?.35:1,padding:'6px 0',
+            }}
+          >
+            <div style={{
+              fontSize:24,lineHeight:1,
+              transform:active?'scale(1.18)':'scale(1)',
+              transition:'transform .2s cubic-bezier(.22,.68,0,1.2)',
+              filter:active?'none':'grayscale(.4) opacity(.65)',
+            }}>{t.icon}</div>
+            <div style={{
+              fontSize:9,fontWeight:active?700:400,
+              color:active?'#EA580C':'var(--text-faint)',
+              letterSpacing:.4,
+            }}>{t.lbl}</div>
+            {active&&<div style={{width:4,height:4,borderRadius:'50%',background:'#EA580C'}}/>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   ROOT APP
+════════════════════════════════════════════════════════ */
+function App() {
+  const [screen,setScreen]     = useState('login');   // login | app
+  const [empresa,setEmpresa]   = useState(null);
+  const [view,setView]         = useState('home');    // home|ot|chat|historial
+  const [subView,setSubView]   = useState(null);      // diagnostico|cotizacion|historial-detail
+  const [camion,setCamion]     = useState(null);
+  const [showNotif,setNotif]   = useState(false);
+
+  const activo     = empresa?.camiones.find(c=>c.estado==='en_taller');
+  const notifCount = DATA.notifs.filter(n=>n.nueva).length;
+
+  const goHome = () => { setView('home'); setSubView(null); setCamion(null); };
+
+  /* Select camion from home */
+  const selectCamion = (c) => {
+    setCamion(c);
+    if(c.estado==='en_taller') setSubView('diagnostico');
+    else setSubView('historial-detail');
+  };
+
+  /* After cotizacion approved → jump to OT */
+  const afterApprove = () => {
+    setSubView(null);
+    setCamion(null);
+    setView('ot');
+  };
+
+  if(screen==='login') return (
+    <div className="phone"><div className="screen">
+      <LoginScreen onLogin={emp=>{ setEmpresa(emp); setScreen('app'); }}/>
+    </div></div>
+  );
+
+  /* Notification overlay */
+  if(showNotif) return (
+    <div className="phone"><div className="screen">
+      <TopBar empresa={empresa} notifCount={0} onNotif={()=>setNotif(false)}/>
+      <div className="scroll"><NotificacionesScreen onBack={()=>setNotif(false)}/></div>
+    </div></div>
+  );
+
+  /* Sub-views from home */
+  if(subView==='diagnostico'&&camion) return (
+    <div className="phone"><div className="screen">
+      <TopBar empresa={empresa} notifCount={notifCount} onNotif={()=>setNotif(true)}/>
+      <div className="scroll">
+        <DiagnosticoScreen camion={camion} onNext={()=>setSubView('cotizacion')} onBack={goHome}/>
+      </div>
+    </div></div>
+  );
+
+  if(subView==='cotizacion'&&camion) return (
+    <div className="phone"><div className="screen">
+      <TopBar empresa={empresa} notifCount={notifCount} onNotif={()=>setNotif(true)}/>
+      <div className="scroll">
+        <CotizacionScreen camion={camion} onApprove={afterApprove} onBack={()=>setSubView('diagnostico')}/>
+      </div>
+    </div></div>
+  );
+
+  if(subView==='historial-detail'&&camion) return (
+    <div className="phone"><div className="screen">
+      <TopBar empresa={empresa} notifCount={notifCount} onNotif={()=>setNotif(true)}/>
+      <div className="scroll">
+        <HistorialScreen camion={camion} onBack={goHome}/>
+      </div>
+    </div></div>
+  );
+
+  /* Main tab views */
+  return (
+    <div className="phone"><div className="screen">
+      <TopBar empresa={empresa} notifCount={notifCount} onNotif={()=>setNotif(true)}/>
+      <div className="scroll">
+        {view==='home' && <HomeScreen empresa={empresa} onSelect={selectCamion}/>}
+        {view==='ot'   && <OTScreen   camion={activo||empresa.camiones[0]} onChat={()=>setView('chat')} onBack={goHome}/>}
+        {view==='chat' && <ChatScreen empresa={empresa} onBack={()=>setView('ot')}/>}
+        {view==='historial' && <HistorialScreen camion={activo||empresa.camiones[0]} onBack={goHome}/>}
+      </div>
+      <TabBar view={view} setView={v=>{setSubView(null);setCamion(null);setView(v);}} hasActivo={!!activo}/>
+    </div></div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
