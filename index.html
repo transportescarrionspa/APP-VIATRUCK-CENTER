@@ -149,6 +149,33 @@
       to   { transform: translateY(0);    opacity: 1; }
     }
 
+    /* ── Splash screen animations ── */
+    @keyframes truckDrive {
+      0%   { transform: translateX(-70px) scale(0.8) rotate(-4deg); opacity: 0; filter: blur(4px); }
+      60%  { transform: translateX(6px)   scale(1.06) rotate(1deg); opacity: 1; filter: blur(0); }
+      100% { transform: translateX(0)     scale(1) rotate(0deg);    opacity: 1; filter: blur(0); }
+    }
+    @keyframes letterReveal {
+      from { opacity: 0; transform: translateY(14px); filter: blur(6px); }
+      to   { opacity: 1; transform: translateY(0);    filter: blur(0);   }
+    }
+    @keyframes lineGrow {
+      from { transform: scaleX(0); opacity: 0; }
+      to   { transform: scaleX(1); opacity: 1; }
+    }
+    @keyframes splashExit {
+      0%   { transform: translateY(0);     opacity: 1; }
+      100% { transform: translateY(-100%); opacity: 0; }
+    }
+    @keyframes glowPulse {
+      0%,100% { opacity: .12; transform: translate(-50%,-50%) scale(1);   }
+      50%      { opacity: .22; transform: translate(-50%,-50%) scale(1.15); }
+    }
+    @keyframes scanLine {
+      from { left: -40%; }
+      to   { left: 130%; }
+    }
+
     .nav-forward { animation: slideFromRight .3s cubic-bezier(.22,.68,0,1.2) both; }
     .nav-back    { animation: slideFromLeft  .3s cubic-bezier(.22,.68,0,1.2) both; }
     .nav-tab     { animation: fadeInUp       .3s cubic-bezier(.22,.68,0,1.2) both; }
@@ -578,6 +605,164 @@ function NumKey({val,onTap}) {
         transform:p?'scale(0.88)':'scale(1)',
         transition:'transform .1s',
       }}>{val}</button>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   SPLASH SCREEN
+════════════════════════════════════════════════════════ */
+function SplashScreen({onDone}) {
+  const [phase,  setPhase]  = useState(0);
+  const [barW,   setBarW]   = useState(0);
+  const [exiting,setExiting]= useState(false);
+
+  /* Secuencia de fases */
+  useEffect(()=>{
+    const T=[
+      setTimeout(()=>setPhase(1),  120),   // camión entra
+      setTimeout(()=>setPhase(2),  520),   // "VIATRUCK" letra a letra
+      setTimeout(()=>setPhase(3),  980),   // "CENTER" letra a letra
+      setTimeout(()=>setPhase(4), 1320),   // línea horizontal
+      setTimeout(()=>setPhase(5), 1560),   // tagline
+      setTimeout(()=>setPhase(6), 1780),   // barra de carga
+      setTimeout(()=>setExiting(true), 2900),
+      setTimeout(onDone, 3380),
+    ];
+    return()=>T.forEach(clearTimeout);
+  },[]);
+
+  /* Rellena la barra con rAF */
+  useEffect(()=>{
+    if(phase<6) return;
+    let start=null;
+    const dur=900;
+    const tick=ts=>{
+      if(!start) start=ts;
+      const p=Math.min((ts-start)/dur,1);
+      setBarW(p*100);
+      if(p<1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  },[phase]);
+
+  const VT='VIATRUCK'.split('');
+  const CN='CENTER'.split('');
+
+  return (
+    <div style={{
+      position:'absolute', inset:0, zIndex:500,
+      background:'linear-gradient(160deg,#080812 0%,#0f0f1c 50%,#0b0810 100%)',
+      display:'flex', flexDirection:'column',
+      alignItems:'center', justifyContent:'center',
+      overflow:'hidden',
+      animation: exiting ? 'splashExit .48s cubic-bezier(.4,0,.2,1) forwards' : 'none',
+    }}>
+
+      {/* Glow de fondo */}
+      <div style={{
+        position:'absolute', width:280, height:280, borderRadius:'50%',
+        background:'radial-gradient(circle,rgba(234,88,12,.18) 0%,transparent 70%)',
+        top:'42%', left:'50%',
+        animation:'glowPulse 2.4s ease-in-out infinite',
+        pointerEvents:'none',
+      }}/>
+
+      {/* Líneas de grilla decorativas */}
+      {[0,1,2].map(i=>(
+        <div key={i} style={{
+          position:'absolute', left:0, right:0,
+          height:'1px', background:'rgba(255,255,255,.03)',
+          top:`${25+i*25}%`, pointerEvents:'none',
+        }}/>
+      ))}
+
+      {/* Camión */}
+      <div style={{
+        fontSize:68, marginBottom:26,
+        opacity: phase>=1?1:0,
+        animation: phase>=1 ? 'truckDrive .65s cubic-bezier(.22,.68,0,1.2) both' : 'none',
+        filter:'drop-shadow(0 0 24px rgba(234,88,12,.55))',
+        lineHeight:1,
+      }}>🚛</div>
+
+      {/* VIATRUCK */}
+      <div style={{display:'flex',gap:1,marginBottom:5}}>
+        {VT.map((l,i)=>(
+          <span key={i} style={{
+            fontSize:30, fontWeight:800, letterSpacing:5,
+            color:'var(--text)', fontFamily:'var(--sans)',
+            opacity: phase>=2?1:0,
+            animation: phase>=2 ? `letterReveal .4s ${i*55}ms cubic-bezier(.22,.68,0,1.2) both` : 'none',
+            display:'inline-block',
+          }}>{l}</span>
+        ))}
+      </div>
+
+      {/* CENTER */}
+      <div style={{display:'flex',gap:2,marginBottom:28}}>
+        {CN.map((l,i)=>(
+          <span key={i} style={{
+            fontSize:14, fontWeight:600, letterSpacing:9,
+            color:'#EA580C', fontFamily:'var(--sans)',
+            opacity: phase>=3?1:0,
+            animation: phase>=3 ? `letterReveal .35s ${i*65+80}ms cubic-bezier(.22,.68,0,1.2) both` : 'none',
+            display:'inline-block',
+          }}>{l}</span>
+        ))}
+      </div>
+
+      {/* Línea */}
+      {phase>=4 && (
+        <div style={{
+          width:140, height:1,
+          background:'linear-gradient(90deg,transparent,#EA580C,transparent)',
+          marginBottom:14, transformOrigin:'left',
+          animation:'lineGrow .4s cubic-bezier(.22,.68,0,1.2) both',
+        }}/>
+      )}
+
+      {/* Tagline */}
+      {phase>=5 && (
+        <div style={{
+          fontSize:10, color:'var(--text-dim)', letterSpacing:3,
+          marginBottom:44,
+          animation:'fadeInUp .4s ease both',
+        }}>PORTAL DE CLIENTES</div>
+      )}
+
+      {/* Loading bar */}
+      {phase>=6 && (
+        <div style={{width:140, position:'relative'}}>
+          <div style={{
+            height:2, background:'rgba(255,255,255,.06)',
+            borderRadius:1, overflow:'hidden',
+            position:'relative',
+          }}>
+            {/* Fill */}
+            <div style={{
+              position:'absolute', top:0, left:0, bottom:0,
+              background:'linear-gradient(90deg,#EA580C,#F97316)',
+              borderRadius:1, width:`${barW}%`,
+              boxShadow:'0 0 8px rgba(234,88,12,.7)',
+            }}/>
+            {/* Scan shimmer */}
+            <div style={{
+              position:'absolute', top:0, bottom:0, width:'40%',
+              background:'linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent)',
+              animation:'scanLine .9s linear infinite',
+            }}/>
+          </div>
+          <div style={{
+            display:'flex',justifyContent:'space-between',
+            marginTop:8,
+          }}>
+            <span style={{fontSize:9,color:'var(--text-faint)',letterSpacing:1}}>INICIANDO</span>
+            <span style={{fontSize:9,color:'var(--text-faint)',fontFamily:'var(--mono)'}}>{Math.round(barW)}%</span>
+          </div>
+        </div>
+      )}
+
+    </div>
   );
 }
 
@@ -1363,7 +1548,7 @@ function TabBar({view,setView,hasActivo,otProgreso}) {
    ROOT APP
 ════════════════════════════════════════════════════════ */
 function App() {
-  const [screen,setScreen]   = useState('login');
+  const [screen,setScreen]   = useState('splash');
   const [empresa,setEmpresa] = useState(null);
   const [view,setView]       = useState('home');
   const [subView,setSubView] = useState(null);
@@ -1412,13 +1597,14 @@ function App() {
     navigate('tab',()=>{ setSubView(null); setCamion(null); setView(v); });
   };
 
-  /* Login */
-  if(screen==='login') return (
+  /* Splash + Login (splash se superpone sobre login para el exit) */
+  if(screen==='splash'||screen==='login') return (
     <div className="phone">
       <StatusBar dark/>
       <div className="screen">
         <LoginScreen onLogin={emp=>{ setEmpresa(emp); navigate('forward',()=>setScreen('app')); }}/>
       </div>
+      {screen==='splash' && <SplashScreen onDone={()=>setScreen('login')}/>}
     </div>
   );
 
